@@ -1,14 +1,17 @@
+// صفحة تسجيل الدخول مع دعم الاتجاه من اليمين إلى اليسار (RTL) وإضافة أزرار فيسبوك وجوجل مع التنقل إلى صفحة التسجيل
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:homy/views/screens/auth_screens/register_screen.dart';
 
 class LoginScreen extends StatelessWidget {
   const LoginScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: SingleChildScrollView(
-        child: Padding(
+    return Directionality( // إضافة اتجاه RTL لدعم اللغة العربية
+      textDirection: TextDirection.rtl,
+      child: Scaffold(
+        body: SingleChildScrollView(
           padding: const EdgeInsets.all(16.0),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -24,16 +27,14 @@ class LoginScreen extends StatelessWidget {
               Text(
                 "تسجيل الدخول إلى حسابك",
                 style: GoogleFonts.tajawal(
-                  color: const Color(0xFF0d120E),
-                  fontWeight: FontWeight.bold,
                   fontSize: 28,
+                  fontWeight: FontWeight.bold,
                 ),
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 30),
               TextField(
                 keyboardType: TextInputType.emailAddress,
-                textInputAction: TextInputAction.next,
                 decoration: InputDecoration(
                   labelText: 'البريد الإلكتروني',
                   border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
@@ -43,8 +44,6 @@ class LoginScreen extends StatelessWidget {
               const SizedBox(height: 16),
               TextField(
                 obscureText: true,
-                keyboardType: TextInputType.visiblePassword,
-                textInputAction: TextInputAction.done,
                 decoration: InputDecoration(
                   labelText: 'كلمة المرور',
                   border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
@@ -54,16 +53,13 @@ class LoginScreen extends StatelessWidget {
               const SizedBox(height: 20),
               ElevatedButton(
                 onPressed: () {},
-                style: ElevatedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                ),
                 child: Text(
                   'تسجيل الدخول',
                   style: GoogleFonts.tajawal(fontSize: 18, fontWeight: FontWeight.bold),
                 ),
               ),
               const SizedBox(height: 20),
+              // أزرار تسجيل الدخول باستخدام جوجل وفيسبوك
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: [
@@ -71,49 +67,33 @@ class LoginScreen extends StatelessWidget {
                     onPressed: () {},
                     icon: const Icon(Icons.g_mobiledata, color: Colors.red),
                     label: Text('جوجل', style: GoogleFonts.tajawal(fontSize: 14)),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.white,
-                      foregroundColor: Colors.black,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                      elevation: 3,
-                    ),
                   ),
                   ElevatedButton.icon(
                     onPressed: () {},
                     icon: const Icon(Icons.facebook, color: Colors.blue),
                     label: Text('فيسبوك', style: GoogleFonts.tajawal(fontSize: 14)),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.white,
-                      foregroundColor: Colors.black,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                      elevation: 3,
-                    ),
                   ),
                 ],
               ),
               const SizedBox(height: 20),
-              TextButton(
-                onPressed: () {},
-                child: Text(
-                  'نسيت كلمة المرور؟',
-                  style: GoogleFonts.tajawal(color: Colors.blue),
-                ),
-              ),
+              // زر الانتقال إلى صفحة التسجيل
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Text(
-                    'ليس لديك حساب؟',
-                    style: GoogleFonts.tajawal(fontSize: 14),
-                  ),
+                  Text('ليس لديك حساب؟', style: GoogleFonts.tajawal(fontSize: 14)),
                   TextButton(
-                    onPressed: () {},
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => const RegisterScreen()),
+                      );
+                    },
                     child: Text(
                       'إنشاء حساب جديد',
                       style: GoogleFonts.tajawal(
                         fontSize: 14,
                         fontWeight: FontWeight.bold,
-                        color: Colors.green,
+                        color: Color(0xFFc6ab7c),
                       ),
                     ),
                   ),
