@@ -53,9 +53,11 @@ class LoginScreen extends StatelessWidget {
               const SizedBox(height: 20),
               ElevatedButton(
                 onPressed: () {},
+                style: ButtonStyle(backgroundColor:WidgetStatePropertyAll<Color>(Color( 0xFFc6ab7c))),
                 child: Text(
                   'تسجيل الدخول',
-                  style: GoogleFonts.tajawal(fontSize: 18, fontWeight: FontWeight.bold),
+                  style: GoogleFonts.tajawal(fontSize: 18, fontWeight: FontWeight.bold,color: Color.fromARGB(255, 10, 10, 10),),
+                  
                 ),
               ),
               const SizedBox(height: 20),

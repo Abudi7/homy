@@ -86,12 +86,13 @@ class RegisterScreen extends StatelessWidget {
               ElevatedButton(
                 onPressed: () {},
                 style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFFc6ab7c),
                   padding: const EdgeInsets.symmetric(vertical: 14),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                 ),
                 child: Text(
                   'إنشاء الحساب',
-                  style: GoogleFonts.tajawal(fontSize: 18, fontWeight: FontWeight.bold),
+                  style: GoogleFonts.tajawal(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.black),
                 ),
               ),
               const SizedBox(height: 20),
