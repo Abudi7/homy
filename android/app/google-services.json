@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "245432851407",
+    "project_id": "homy-8fb90",
+    "storage_bucket": "homy-8fb90.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:245432851407:android:a8959ce96915f495fe50ba",
+        "android_client_info": {
+          "package_name": "com.example.homy"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC71FE4Kngz9a8VEISWH6A-rE3hVu0A9eQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

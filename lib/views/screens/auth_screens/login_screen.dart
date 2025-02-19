@@ -1,6 +1,8 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:homy/views/screens/auth_screens/register_screen.dart';
+import 'package:homy/views/screens/home/home_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -10,43 +12,83 @@ class LoginScreen extends StatefulWidget {
 }
 
 class LoginScreenState extends State<LoginScreen> {
-  // مفاتيح النموذج (Form) للتحقق من صحة الإدخال
-  final _formKey = GlobalKey<FormState>();
+  final _formKey = GlobalKey<FormState>(); // مفتاح النموذج للتحقق من صحة الإدخال
+  final FirebaseAuth _auth = FirebaseAuth.instance; // Firebase Authentication
 
-  // المتغيرات لتخزين بيانات البريد الإلكتروني وكلمة المرور
-  String? email;
-  String? password;
+  String? email; // متغير لتخزين البريد الإلكتروني
+  String? password; // متغير لتخزين كلمة المرور
+
+  bool isLoading = false; // متغير لحالة التحميل عند تسجيل الدخول
+
+  // ✅ دالة تسجيل الدخول عبر Firebase
+  Future<void> signUser() async {
+    if (!_formKey.currentState!.validate()) return; // التحقق من صحة الإدخالات
+    _formKey.currentState!.save(); // حفظ القيم من الحقول
+
+    setState(() => isLoading = true); // تفعيل مؤشر التحميل
+
+    try {
+      // تنفيذ تسجيل الدخول باستخدام Firebase Auth
+      await _auth.signInWithEmailAndPassword(email: email!, password: password!);
+
+      // ✅ التحقق مما إذا كان `context` لا يزال صالحًا قبل استخدامه
+      if (!mounted) return;
+
+      // ✅ في حالة نجاح تسجيل الدخول، انتقل إلى الصفحة الرئيسية
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (context) => HomeScreen(userName: email!), // يمرر البريد الإلكتروني للترحيب بالمستخدم
+        ),
+      );
+    } on FirebaseAuthException catch (e) {
+      // ❌ عرض رسالة خطأ عند فشل تسجيل الدخول
+      String errorMessage = "حدث خطأ غير متوقع";
+      if (e.code == 'user-not-found') {
+        errorMessage = "البريد الإلكتروني غير مسجل";
+      } else if (e.code == 'wrong-password') {
+        errorMessage = "كلمة المرور غير صحيحة";
+      }
+
+      // ✅ التحقق مما إذا كان `context` لا يزال صالحًا قبل إظهاره
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(errorMessage, textAlign: TextAlign.center)),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => isLoading = false); // إيقاف مؤشر التحميل
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    return Directionality( // إضافة اتجاه RTL لدعم اللغة العربية
+    return Directionality( // ✅ دعم اتجاه النص من اليمين إلى اليسار
       textDirection: TextDirection.rtl,
       child: Scaffold(
         body: SingleChildScrollView(
           padding: const EdgeInsets.all(16.0),
           child: Form(
-            key: _formKey, // تعيين مفتاح النموذج للتحقق من الإدخال
+            key: _formKey, // ✅ مفتاح النموذج للتحقق من الإدخال
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 const SizedBox(height: 50),
                 Image.asset(
-                  'assets/images/logo.png',
+                  'assets/images/logo.png', // ✅ صورة شعار التطبيق
                   height: 300,
                   fit: BoxFit.cover,
                 ),
                 const SizedBox(height: 20),
                 Text(
                   "تسجيل الدخول إلى حسابك",
-                  style: GoogleFonts.tajawal(
-                    fontSize: 28,
-                    fontWeight: FontWeight.bold,
-                  ),
+                  style: GoogleFonts.tajawal(fontSize: 28, fontWeight: FontWeight.bold),
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 30),
-                // حقل إدخال البريد الإلكتروني مع التحقق من صحة الإدخال
+
+                // ✅ حقل إدخال البريد الإلكتروني
                 TextFormField(
                   keyboardType: TextInputType.emailAddress,
                   decoration: InputDecoration(
@@ -55,17 +97,15 @@ class LoginScreenState extends State<LoginScreen> {
                     prefixIcon: const Icon(Icons.email),
                   ),
                   validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'يرجى إدخال البريد الإلكتروني';
-                    } else if (!RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(value)) {
-                      return 'يرجى إدخال بريد إلكتروني صالح';
-                    }
+                    if (value == null || value.isEmpty) return 'يرجى إدخال البريد الإلكتروني';
+                    if (!RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(value)) return 'يرجى إدخال بريد إلكتروني صالح';
                     return null;
                   },
                   onSaved: (value) => email = value,
                 ),
                 const SizedBox(height: 16),
-                // حقل إدخال كلمة المرور مع التحقق من صحة الإدخال
+
+                // ✅ حقل إدخال كلمة المرور
                 TextFormField(
                   obscureText: true,
                   decoration: InputDecoration(
@@ -74,58 +114,48 @@ class LoginScreenState extends State<LoginScreen> {
                     prefixIcon: const Icon(Icons.lock),
                   ),
                   validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'يرجى إدخال كلمة المرور';
-                    } else if (value.length < 6) {
-                      return 'يجب أن تكون كلمة المرور مكونة من 6 أحرف على الأقل';
-                    }
+                    if (value == null || value.isEmpty) return 'يرجى إدخال كلمة المرور';
+                    if (value.length < 6) return 'يجب أن تكون كلمة المرور مكونة من 6 أحرف على الأقل';
                     return null;
                   },
                   onSaved: (value) => password = value,
                 ),
                 const SizedBox(height: 20),
+
+                // ✅ زر تسجيل الدخول
                 ElevatedButton(
-                  onPressed: () {
-                    // تحقق من صحة النموذج
-                    if (_formKey.currentState!.validate()) {
-                      _formKey.currentState!.save();
-                      // تنفيذ إجراء تسجيل الدخول هنا
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('تم تسجيل الدخول بنجاح')),
-                      );
-                    }
-                  },
+                  onPressed: isLoading ? null : signUser, // تعطيل الزر أثناء التحميل
                   style: ButtonStyle(
                     backgroundColor: WidgetStateProperty.all<Color>(const Color(0xFFc6ab7c)),
                   ),
-                  child: Text(
-                    'تسجيل الدخول',
-                    style: GoogleFonts.tajawal(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: const Color.fromARGB(255, 10, 10, 10),
-                    ),
-                  ),
+                  child: isLoading
+                      ? const CircularProgressIndicator(color: Colors.white) // ✅ مؤشر تحميل أثناء تسجيل الدخول
+                      : Text(
+                          'تسجيل الدخول',
+                          style: GoogleFonts.tajawal(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.black),
+                        ),
                 ),
                 const SizedBox(height: 20),
-                // أزرار تسجيل الدخول باستخدام جوجل وفيسبوك
+
+                // ✅ أزرار تسجيل الدخول باستخدام جوجل وفيسبوك
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                   children: [
                     ElevatedButton.icon(
-                      onPressed: () {},
+                      onPressed: () {}, // إضافة وظيفة تسجيل الدخول بـ Google
                       icon: const Icon(Icons.g_mobiledata, color: Colors.red),
                       label: Text('جوجل', style: GoogleFonts.tajawal(fontSize: 14)),
                     ),
                     ElevatedButton.icon(
-                      onPressed: () {},
+                      onPressed: () {}, // إضافة وظيفة تسجيل الدخول بـ Facebook
                       icon: const Icon(Icons.facebook, color: Colors.blue),
                       label: Text('فيسبوك', style: GoogleFonts.tajawal(fontSize: 14)),
                     ),
                   ],
                 ),
                 const SizedBox(height: 20),
-                // زر الانتقال إلى صفحة التسجيل
+
+                // ✅ زر الانتقال إلى صفحة التسجيل
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
@@ -139,11 +169,7 @@ class LoginScreenState extends State<LoginScreen> {
                       },
                       child: Text(
                         'إنشاء حساب جديد',
-                        style: GoogleFonts.tajawal(
-                          fontSize: 14,
-                          fontWeight: FontWeight.bold,
-                          color: const Color(0xFFc6ab7c),
-                        ),
+                        style: GoogleFonts.tajawal(fontSize: 14, fontWeight: FontWeight.bold, color: Color(0xFFc6ab7c)),
                       ),
                     ),
                   ],
