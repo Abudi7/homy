@@ -28,11 +28,10 @@ class LoginScreenState extends State<LoginScreen> {
     setState(() => isLoading = true); // تفعيل مؤشر التحميل
 
     try {
-      // تنفيذ تسجيل الدخول باستخدام Firebase Auth
+      // ✅ تنفيذ تسجيل الدخول باستخدام Firebase Auth
       await _auth.signInWithEmailAndPassword(email: email!, password: password!);
 
-      // ✅ التحقق مما إذا كان `context` لا يزال صالحًا قبل استخدامه
-      if (!mounted) return;
+      if (!mounted) return; // ✅ التحقق مما إذا كان `context` لا يزال صالحًا قبل استخدامه
 
       // ✅ في حالة نجاح تسجيل الدخول، انتقل إلى الصفحة الرئيسية
       Navigator.pushReplacement(
@@ -42,18 +41,25 @@ class LoginScreenState extends State<LoginScreen> {
         ),
       );
     } on FirebaseAuthException catch (e) {
-      // ❌ عرض رسالة خطأ عند فشل تسجيل الدخول
-      String errorMessage = "حدث خطأ غير متوقع";
+      String errorMessage = "حدث خطأ غير متوقع، يرجى المحاولة مرة أخرى";
+
+      // ✅ التحقق من الأخطاء الشائعة وعرض الرسالة باللغة العربية
       if (e.code == 'user-not-found') {
         errorMessage = "البريد الإلكتروني غير مسجل";
       } else if (e.code == 'wrong-password') {
         errorMessage = "كلمة المرور غير صحيحة";
+      } else if (e.code == 'invalid-email') {
+        errorMessage = "تنسيق البريد الإلكتروني غير صالح";
+      } else if (e.code == 'too-many-requests') {
+        errorMessage = "تم حظر تسجيل الدخول مؤقتًا بسبب محاولات كثيرة، يرجى المحاولة لاحقًا";
       }
 
-      // ✅ التحقق مما إذا كان `context` لا يزال صالحًا قبل إظهاره
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(errorMessage, textAlign: TextAlign.center)),
+          SnackBar(
+            content: Text(errorMessage, textAlign: TextAlign.center),
+            backgroundColor: Colors.redAccent,
+          ),
         );
       }
     } finally {

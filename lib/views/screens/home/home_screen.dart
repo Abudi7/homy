@@ -53,11 +53,13 @@ class HomeScreen extends StatelessWidget {
                 onPressed: () async {
                   await FirebaseAuth.instance.signOut(); // ✅ تسجيل خروج المستخدم من Firebase
 
-                  // ✅ الانتقال إلى شاشة تسجيل الدخول واستبدال الصفحة الحالية
-                  Navigator.pushReplacement(
-                    context,
-                    MaterialPageRoute(builder: (context) => const LoginScreen()),
-                  );
+                  if (context.mounted) {
+                    // ✅ تأكد أن `context` لا يزال متاحًا قبل استخدامه
+                    Navigator.pushReplacement(
+                      context,
+                      MaterialPageRoute(builder: (context) => const LoginScreen()),
+                    );
+                  }
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.redAccent,

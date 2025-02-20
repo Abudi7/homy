@@ -1,5 +1,8 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:homy/views/screens/home/home_screen.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -9,14 +12,91 @@ class RegisterScreen extends StatefulWidget {
 }
 
 class RegisterScreenState extends State<RegisterScreen> {
-  final _formKey = GlobalKey<FormState>();
+  final _formKey = GlobalKey<FormState>(); // ✅ مفتاح التحقق من صحة الإدخالات
+  final FirebaseAuth _auth = FirebaseAuth.instance; // ✅ Firebase Authentication
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance; // ✅ Firestore لتخزين بيانات المستخدم
 
-  String? firstName, lastName, email, password, age, address, gender;
+  String? firstName, lastName, email, password, confirmPassword, birthday, address, gender;
+  bool isLoading = false; // ✅ متغير لتحديد حالة التحميل
+
+  // ✅ دالة تسجيل المستخدم وحفظ بياناته في Firestore
+  Future<void> registerUser() async {
+    if (!_formKey.currentState!.validate()) return; // ✅ التحقق من صحة الإدخالات
+    _formKey.currentState!.save(); // ✅ حفظ القيم بعد التحقق
+
+    // ✅ التحقق من تطابق كلمتي المرور
+    if (password != confirmPassword) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('كلمتا المرور غير متطابقتين', textAlign: TextAlign.center)),
+      );
+      return;
+    }
+
+    setState(() => isLoading = true); // ✅ تفعيل مؤشر التحميل
+
+    try {
+      // ✅ إنشاء المستخدم في Firebase Authentication
+      UserCredential userCredential = await _auth.createUserWithEmailAndPassword(
+        email: email!,
+        password: password!,
+      );
+
+      // ✅ توليد معرف (ID) تلقائي للمستخدم في Firestore
+      String userId = userCredential.user!.uid;
+
+      // ✅ تعيين صورة الملف الشخصي الافتراضية
+      String profileImage = "assets/images/profile/profile-image.png";
+
+      // ✅ حفظ بيانات المستخدم في Firestore
+      await _firestore.collection("users").doc(userId).set({
+        "firstName": firstName,
+        "lastName": lastName,
+        "email": email,
+        "birthday": birthday,
+        "address": address,
+        "gender": gender,
+        "profileImage": profileImage, // ✅ صورة الملف الشخصي الافتراضية
+        "createdAt": FieldValue.serverTimestamp(), // ✅ تاريخ إنشاء الحساب
+      });
+
+      if (!mounted) return;
+
+      // ✅ عرض رسالة نجاح
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('تم التسجيل بنجاح!', textAlign: TextAlign.center)),
+      );
+
+      // ✅ الانتقال إلى الصفحة الرئيسية بعد نجاح التسجيل
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => HomeScreen(userName: firstName!)),
+      );
+    } on FirebaseAuthException catch (e) {
+      String errorMessage = "حدث خطأ أثناء إنشاء الحساب";
+
+      // ✅ معالجة الأخطاء المحتملة
+      if (e.code == 'email-already-in-use') {
+        errorMessage = "هذا البريد الإلكتروني مسجل بالفعل";
+      } else if (e.code == 'invalid-email') {
+        errorMessage = "تنسيق البريد الإلكتروني غير صالح";
+      } else if (e.code == 'weak-password') {
+        errorMessage = "كلمة المرور ضعيفة جدًا، اختر كلمة أقوى";
+      }
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(errorMessage, textAlign: TextAlign.center)),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => isLoading = false); // ✅ إيقاف مؤشر التحميل
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return Directionality(
-      textDirection: TextDirection.rtl,
+      textDirection: TextDirection.rtl, // ✅ دعم اللغة العربية
       child: Scaffold(
         appBar: AppBar(
           title: Text('إنشاء حساب جديد', style: GoogleFonts.tajawal(fontWeight: FontWeight.bold)),
@@ -30,11 +110,11 @@ class RegisterScreenState extends State<RegisterScreen> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 Image.asset('assets/images/logo.png', height: 120),
-                const SizedBox(height: 10), // تقليل المسافة
+                const SizedBox(height: 10),
 
+                // ✅ الاسم الأول
                 TextFormField(
                   keyboardType: TextInputType.name,
-                  textInputAction: TextInputAction.next,
                   decoration: InputDecoration(
                     labelText: 'الاسم الأول',
                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
@@ -45,9 +125,9 @@ class RegisterScreenState extends State<RegisterScreen> {
                 ),
                 const SizedBox(height: 10),
 
+                // ✅ اللقب
                 TextFormField(
                   keyboardType: TextInputType.name,
-                  textInputAction: TextInputAction.next,
                   decoration: InputDecoration(
                     labelText: 'اللقب',
                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
@@ -58,109 +138,93 @@ class RegisterScreenState extends State<RegisterScreen> {
                 ),
                 const SizedBox(height: 10),
 
+                // ✅ البريد الإلكتروني
                 TextFormField(
                   keyboardType: TextInputType.emailAddress,
-                  textInputAction: TextInputAction.next,
                   decoration: InputDecoration(
                     labelText: 'البريد الإلكتروني',
                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
                     prefixIcon: const Icon(Icons.email),
                   ),
-                  validator: (value) {
-                    if (value == null || value.isEmpty) return 'يرجى إدخال البريد الإلكتروني';
-                    if (!RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(value)) return 'يرجى إدخال بريد إلكتروني صالح';
-                    return null;
-                  },
+                  validator: (value) => value == null || value.isEmpty ? 'يرجى إدخال البريد الإلكتروني' : null,
                   onSaved: (value) => email = value,
                 ),
                 const SizedBox(height: 10),
 
+                // ✅ كلمة المرور
                 TextFormField(
                   obscureText: true,
-                  keyboardType: TextInputType.visiblePassword,
-                  textInputAction: TextInputAction.next,
                   decoration: InputDecoration(
                     labelText: 'كلمة المرور',
                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
                     prefixIcon: const Icon(Icons.lock),
                   ),
-                  validator: (value) {
-                    if (value == null || value.isEmpty) return 'يرجى إدخال كلمة المرور';
-                    if (value.length < 6) return 'يجب أن تكون كلمة المرور مكونة من 6 أحرف على الأقل';
-                    return null;
-                  },
                   onSaved: (value) => password = value,
                 ),
                 const SizedBox(height: 10),
 
+                // ✅ تأكيد كلمة المرور
                 TextFormField(
-                  keyboardType: TextInputType.number,
-                  textInputAction: TextInputAction.next,
+                  obscureText: true,
                   decoration: InputDecoration(
-                    labelText: 'العمر',
+                    labelText: 'تأكيد كلمة المرور',
                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-                    prefixIcon: const Icon(Icons.cake),
+                    prefixIcon: const Icon(Icons.lock),
                   ),
-                  validator: (value) {
-                    if (value == null || value.isEmpty) return 'يرجى إدخال العمر';
-                    if (int.tryParse(value) == null || int.parse(value) < 10) return 'يجب أن يكون العمر أكبر من 10';
-                    return null;
-                  },
-                  onSaved: (value) => age = value,
+                  onSaved: (value) => confirmPassword = value,
                 ),
                 const SizedBox(height: 10),
 
+                // ✅ تاريخ الميلاد
+                TextFormField(
+                  keyboardType: TextInputType.datetime,
+                  decoration: InputDecoration(
+                    labelText: 'تاريخ الميلاد (YYYY-MM-DD)',
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                    prefixIcon: const Icon(Icons.calendar_today),
+                  ),
+                  onSaved: (value) => birthday = value,
+                ),
+                const SizedBox(height: 10),
+
+                // ✅ العنوان
                 TextFormField(
                   keyboardType: TextInputType.streetAddress,
-                  textInputAction: TextInputAction.done,
                   decoration: InputDecoration(
                     labelText: 'العنوان',
                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
                     prefixIcon: const Icon(Icons.home),
                   ),
-                  validator: (value) => value == null || value.isEmpty ? 'يرجى إدخال العنوان' : null,
                   onSaved: (value) => address = value,
                 ),
                 const SizedBox(height: 10),
 
+                // ✅ الجنس
                 DropdownButtonFormField<String>(
                   decoration: InputDecoration(
                     labelText: 'الجنس',
                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
                     prefixIcon: const Icon(Icons.person),
                   ),
-                  items: ['ذكر', 'أنثى'].map((String gender) {
-                    return DropdownMenuItem<String>(
-                      value: gender,
-                      child: Text(gender),
-                    );
-                  }).toList(),
-                  validator: (value) => value == null ? 'يرجى اختيار الجنس' : null,
+                  items: [
+                    DropdownMenuItem(value: 'ذكر', child: Text('ذكر')),
+                    DropdownMenuItem(value: 'أنثى', child: Text('أنثى')),
+                  ],
                   onChanged: (value) => gender = value,
-                ),
-                const SizedBox(height: 15),
-
-                ElevatedButton(
-                  onPressed: () {
-                    if (_formKey.currentState!.validate()) {
-                      _formKey.currentState!.save();
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('تم إنشاء الحساب بنجاح!')),
-                      );
-                    }
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFFc6ab7c),
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                  ),
-                  child: Text(
-                    'إنشاء الحساب',
-                    style: GoogleFonts.tajawal(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.black),
-                  ),
                 ),
                 const SizedBox(height: 10),
 
+                // ✅ زر التسجيل
+                ElevatedButton(
+                  onPressed: isLoading ? null : registerUser,
+                  style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFc6ab7c)),
+                  child: isLoading
+                      ? const CircularProgressIndicator(color: Colors.white)
+                      : Text('إنشاء الحساب', style: GoogleFonts.tajawal(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.black)),
+                ),
+                const SizedBox(height: 10),
+
+                // ✅ زر تسجيل الدخول إذا كان لديه حساب
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
