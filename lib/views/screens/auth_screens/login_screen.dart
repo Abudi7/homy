@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -12,65 +13,65 @@ class LoginScreen extends StatefulWidget {
 }
 
 class LoginScreenState extends State<LoginScreen> {
-  final _formKey = GlobalKey<FormState>(); // مفتاح النموذج للتحقق من صحة الإدخال
-  final FirebaseAuth _auth = FirebaseAuth.instance; // Firebase Authentication
+  final _formKey = GlobalKey<FormState>(); // ✅ مفتاح النموذج للتحقق من صحة الإدخال
+  final FirebaseAuth _auth = FirebaseAuth.instance; // ✅ Firebase Authentication
 
-  String? email; // متغير لتخزين البريد الإلكتروني
-  String? password; // متغير لتخزين كلمة المرور
+  String? email; // ✅ متغير لتخزين البريد الإلكتروني
+  String? password; // ✅ متغير لتخزين كلمة المرور
 
-  bool isLoading = false; // متغير لحالة التحميل عند تسجيل الدخول
+  bool isLoading = false; // ✅ متغير لحالة التحميل عند تسجيل الدخول
 
   // ✅ دالة تسجيل الدخول عبر Firebase
   Future<void> signUser() async {
-    if (!_formKey.currentState!.validate()) return; // التحقق من صحة الإدخالات
-    _formKey.currentState!.save(); // حفظ القيم من الحقول
+  if (!_formKey.currentState!.validate()) return;
+  _formKey.currentState!.save();
 
-    setState(() => isLoading = true); // تفعيل مؤشر التحميل
+  setState(() => isLoading = true);
 
-    try {
-      // ✅ تنفيذ تسجيل الدخول باستخدام Firebase Auth
-      await _auth.signInWithEmailAndPassword(email: email!, password: password!);
+  try {
+    // ✅ تنفيذ تسجيل الدخول
+    UserCredential userCredential = await _auth.signInWithEmailAndPassword(
+      email: email!,
+      password: password!,
+    );
 
-      if (!mounted) return; // ✅ التحقق مما إذا كان `context` لا يزال صالحًا قبل استخدامه
+    // ✅ تحميل بيانات المستخدم من Firestore
+    DocumentSnapshot userData = await FirebaseFirestore.instance
+        .collection('users')
+        .doc(userCredential.user!.uid)
+        .get();
 
-      // ✅ في حالة نجاح تسجيل الدخول، انتقل إلى الصفحة الرئيسية
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(
-          builder: (context) => HomeScreen(userName: email!), // يمرر البريد الإلكتروني للترحيب بالمستخدم
-        ),
-      );
-    } on FirebaseAuthException catch (e) {
-      String errorMessage = "حدث خطأ غير متوقع، يرجى المحاولة مرة أخرى";
+    if (!mounted) return; // ✅ حل المشكلة
 
-      // ✅ التحقق من الأخطاء الشائعة وعرض الرسالة باللغة العربية
-      if (e.code == 'user-not-found') {
-        errorMessage = "البريد الإلكتروني غير مسجل";
-      } else if (e.code == 'wrong-password') {
-        errorMessage = "كلمة المرور غير صحيحة";
-      } else if (e.code == 'invalid-email') {
-        errorMessage = "تنسيق البريد الإلكتروني غير صالح";
-      } else if (e.code == 'too-many-requests') {
-        errorMessage = "تم حظر تسجيل الدخول مؤقتًا بسبب محاولات كثيرة، يرجى المحاولة لاحقًا";
-      }
+    String userName = userData['firstName'] ?? email!;
+    String profileImage = userData['profileImage'] ?? "assets/images/profile/profile-image.png";
 
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(errorMessage, textAlign: TextAlign.center),
-            backgroundColor: Colors.redAccent,
-          ),
-        );
-      }
-    } finally {
-      if (mounted) setState(() => isLoading = false); // إيقاف مؤشر التحميل
+    // ✅ الانتقال إلى الصفحة الرئيسية
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(builder: (context) => HomeScreen(userName: userName, profileImage: profileImage)),
+    );
+  } on FirebaseAuthException catch (e) {
+    if (!mounted) return; // ✅ حل المشكلة
+
+    String errorMessage = "حدث خطأ أثناء تسجيل الدخول";
+    if (e.code == 'user-not-found') {
+      errorMessage = "البريد الإلكتروني غير مسجل";
+    } else if (e.code == 'wrong-password') {
+      errorMessage = "كلمة المرور غير صحيحة";
     }
-  }
 
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(errorMessage, textAlign: TextAlign.center)),
+    );
+  } finally {
+    if (mounted) setState(() => isLoading = false);
+  }
+}
   @override
   Widget build(BuildContext context) {
-    return Directionality( // ✅ دعم اتجاه النص من اليمين إلى اليسار
-      textDirection: TextDirection.rtl,
+    return Directionality(
+      textDirection: TextDirection.rtl, // ✅ دعم اتجاه النص من اليمين إلى اليسار
       child: Scaffold(
         body: SingleChildScrollView(
           padding: const EdgeInsets.all(16.0),
@@ -130,7 +131,7 @@ class LoginScreenState extends State<LoginScreen> {
 
                 // ✅ زر تسجيل الدخول
                 ElevatedButton(
-                  onPressed: isLoading ? null : signUser, // تعطيل الزر أثناء التحميل
+                  onPressed: isLoading ? null : signUser, // ✅ تعطيل الزر أثناء التحميل
                   style: ButtonStyle(
                     backgroundColor: WidgetStateProperty.all<Color>(const Color(0xFFc6ab7c)),
                   ),
@@ -142,7 +143,6 @@ class LoginScreenState extends State<LoginScreen> {
                         ),
                 ),
                 const SizedBox(height: 20),
-
                 // ✅ أزرار تسجيل الدخول باستخدام جوجل وفيسبوك
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceEvenly,

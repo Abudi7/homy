@@ -1,11 +1,39 @@
+//import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:homy/views/screens/auth_screens/login_screen.dart';
+import 'package:homy/views/screens/profile/profile_screen.dart';
 
-class HomeScreen extends StatelessWidget {
-  final String userName; // اسم المستخدم (يتم تمريره عند تسجيل الدخول)
+class HomeScreen extends StatefulWidget {
+  final String userName;
+  final String profileImage; // ✅ إضافة الصورة الشخصية
 
-  const HomeScreen({super.key, required this.userName});
+  const HomeScreen({super.key, required this.userName, required this.profileImage});
+
+  @override
+  HomeScreenState createState() => HomeScreenState();
+}
+
+class HomeScreenState extends State<HomeScreen> {
+  int _selectedIndex = 0; // ✅ لتحديد القسم النشط في `BottomNavigationBar`
+
+  // ✅ تحديث `BottomNavigationBar` عند تغيير القسم
+  void _onItemTapped(int index) {
+    setState(() {
+      _selectedIndex = index;
+    });
+  }
+
+  // ✅ تسجيل الخروج
+  void _logout() async {
+    await FirebaseAuth.instance.signOut();
+    if (mounted) {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => const LoginScreen()),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -14,66 +42,82 @@ class HomeScreen extends StatelessWidget {
         title: const Text("الصفحة الرئيسية"),
         centerTitle: true,
         backgroundColor: const Color(0xFFc6ab7c),
-      ),
-      body: Center(
-        child: Padding(
-          padding: const EdgeInsets.all(20.0),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              // صورة ترحيبية
-              Image.asset(
-                'assets/images/welcome.png', // تأكد من إضافة صورة ترحيب إلى مجلد assets
-                height: 150,
+        actions: [
+          // ✅ قائمة منسدلة تحتوي على البروفايل وتسجيل الخروج
+          DropdownButtonHideUnderline(
+            child: DropdownButton<String>(
+              icon: CircleAvatar(
+                backgroundImage: NetworkImage(widget.profileImage),
+                radius: 18,
               ),
-              const SizedBox(height: 20),
-
-              // رسالة الترحيب
-              Text(
-                "مرحبًا بك، $userName!",
-                style: const TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.black87,
+              onChanged: (String? value) {
+                if (value == "profile") {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const ProfileScreen()),
+                  );
+                } else if (value == "logout") {
+                  _logout();
+                }
+              },
+              items: [
+                DropdownMenuItem(
+                  value: "profile",
+                  child: Row(
+                    children: [
+                      const Icon(Icons.person, color: Colors.black),
+                      const SizedBox(width: 8),
+                      Text("الملف الشخصي"),
+                    ],
+                  ),
                 ),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 10),
-
-              Text(
-                "نتمنى لك تجربة رائعة في التطبيق.",
-                style: TextStyle(fontSize: 18, color: Colors.grey.shade700),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 30),
-
-              // زر تسجيل الخروج
-              ElevatedButton(
-                onPressed: () async {
-                  await FirebaseAuth.instance.signOut(); // ✅ تسجيل خروج المستخدم من Firebase
-
-                  if (context.mounted) {
-                    // ✅ تأكد أن `context` لا يزال متاحًا قبل استخدامه
-                    Navigator.pushReplacement(
-                      context,
-                      MaterialPageRoute(builder: (context) => const LoginScreen()),
-                    );
-                  }
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.redAccent,
-                  padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 12),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                DropdownMenuItem(
+                  value: "logout",
+                  child: Row(
+                    children: [
+                      const Icon(Icons.logout, color: Colors.red),
+                      const SizedBox(width: 8),
+                      Text("تسجيل الخروج"),
+                    ],
+                  ),
                 ),
-                child: const Text(
-                  "تسجيل الخروج",
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
-                ),
-              ),
-            ],
+              ],
+            ),
           ),
-        ),
+        ],
+      ),
+
+      // ✅ شريط البحث
+      body: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(10.0),
+            child: TextField(
+              decoration: InputDecoration(
+                hintText: "ابحث عن عقار...",
+                prefixIcon: const Icon(Icons.search),
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+            ),
+          ),
+          Expanded(
+            child: Center(
+              child: Text("عرض قائمة العقارات هنا", style: TextStyle(fontSize: 18)),
+            ),
+          ),
+        ],
+      ),
+
+      // ✅ شريط التنقل السفلي
+      bottomNavigationBar: BottomNavigationBar(
+        items: const [
+          BottomNavigationBarItem(icon: Icon(Icons.home), label: "الرئيسية"),
+          BottomNavigationBarItem(icon: Icon(Icons.business), label: "العقارات"),
+          BottomNavigationBarItem(icon: Icon(Icons.settings), label: "الإعدادات"),
+        ],
+        currentIndex: _selectedIndex,
+        selectedItemColor: Colors.brown,
+        onTap: _onItemTapped,
       ),
     );
   }

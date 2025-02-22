@@ -65,11 +65,15 @@ class RegisterScreenState extends State<RegisterScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('تم التسجيل بنجاح!', textAlign: TextAlign.center)),
       );
-
       // ✅ الانتقال إلى الصفحة الرئيسية بعد نجاح التسجيل
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (context) => HomeScreen(userName: firstName!)),
+        MaterialPageRoute(
+          builder: (context) => HomeScreen(
+            userName: firstName!,
+            profileImage: profileImage, // ✅ تمرير الصورة الافتراضية
+          ),
+        ),
       );
     } on FirebaseAuthException catch (e) {
       String errorMessage = "حدث خطأ أثناء إنشاء الحساب";
